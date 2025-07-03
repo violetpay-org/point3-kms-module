@@ -1,43 +1,46 @@
-import axios, { AxiosError } from "axios";
-import { p3Values } from "point3-common-tool";
-import { InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
+import axios, { AxiosError } from 'axios';
+import { p3Values } from 'point3-common-tool';
+import {
+  BadRequestException,
+  HttpStatus,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 export class KMSVerifier {
-    constructor(
-        private readonly agentURL: string = "http://kms:3342",
-    ){}
+  constructor(private readonly agentURL: string = 'http://kms:3342') {}
 
-    async verify(token: string, ip: string): Promise<[clientId: p3Values.Guid, keyName: string]> {
-        try {
-            const res = await axios.post(`${this.agentURL}/verify`, {
-                token,
-                ip
-            });
+  async verify(
+    token: string,
+    ipAddress: string,
+  ): Promise<[clientId: p3Values.Guid, keyName: string]> {
+    try {
+      const res = await axios.post(`${this.agentURL}/m2m/verify`, {
+        token,
+        ipAddress,
+      });
 
-            if (res.data && res.data.clientId && res.data.keyName) {
-                return [
-                    p3Values.Guid.parse(res.data.clientId),
-                    res.data.keyName,
-                ];
-            } else {
-                throw new InternalServerErrorException('Invalid response from KMS agent');
-            }
-        } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const axiosError = error as AxiosError;
-                if (axiosError.response) {
-                    const { status, data } = axiosError.response;
-                    const message = (data as any)?.message || 'Verification failed';
-                    
-                    if (status >= 400 && status < 500) {
-                        throw new UnauthorizedException(`[KMS] ${message}`);
-                    }
-                    throw new InternalServerErrorException(`[KMS] Agent error with status ${status}`);
-                } else if (axiosError.request) {
-                    throw new InternalServerErrorException('[KMS] No response from agent');
-                }
-            }
-            throw new InternalServerErrorException(`[KMS] Unexpected error: ${(error as Error).message}`);
+      if (!res.data || !res.data.result || !res.data.result.clientId || !res.data.result.keyName) {
+        throw new InternalServerErrorException('Invalid response from KMS agent');
+      }
+
+      return [
+        p3Values.Guid.parse(res.data.result.clientId),
+        res.data.result.keyName,
+      ];
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        switch (error.response.status) {
+          case HttpStatus.BAD_REQUEST:
+            throw new BadRequestException('잘못된 토큰 형식 또는 필수 필드 누락');
+          case HttpStatus.UNAUTHORIZED:
+            throw new UnauthorizedException('허용되지 않은 IP 또는 토큰 서명 검증 실패');
+          case HttpStatus.INTERNAL_SERVER_ERROR:
+            throw new InternalServerErrorException('KMS Agent internal server error');
         }
+      }
+
+      throw error;
     }
+  }
 }
