@@ -98,6 +98,22 @@ export class YourController {
 
 토큰 검증 로직을 처리하는 NestJS 가드입니다. `Authorization` 헤더와 클라이언트 IP 주소를 읽어 KMS 에이전트로 전송하고, 성공 시 요청 객체에 결과를 첨부합니다.
 
+### 오류 처리(Error Handling)
+
+`KMSGuard`는 검증 과정에서 다양한 오류가 발생할 경우, 다음과 같은 NestJS 표준 예외를 던집니다.
+
+-   **`ForbiddenException` (403)**
+    -   요청에서 클라이언트의 IP 주소를 확인할 수 없을 때 발생합니다.
+-   **`BadRequestException` (400)**
+    -   `Authorization` 헤더가 요청에 포함되지 않았을 때 발생합니다.
+    -   `Authorization` 헤더의 형식이 `Bearer <token>`이 아닐 때 발생합니다.
+-   **`UnauthorizedException` (401)**
+    -   KMS 에이전트가 토큰이 유효하지 않다고 응답할 때 (HTTP 401) 발생합니다.
+-   **`InternalServerErrorException` (500)**
+    -   KMS 에이전트 자체에 오류가 발생했거나 (HTTP 500), 에이전트의 응답을 파싱할 수 없을 때 발생합니다.
+
+이 외에도 KMS 에이전트와의 통신 중 발생하는 다른 HTTP 오류나 네트워크 오류는 해당 상태 코드에 맞는 예외로 변환되거나 원본 오류 그대로 전달될 수 있습니다.
+
 ### `@KMSClientId()`
 
 요청 객체에서 `clientId`(`p3Values.Guid` 객체)를 추출하는 파라미터 데코레이터입니다. `KMSGuard`로 보호되는 경로에서 사용해야 합니다.
