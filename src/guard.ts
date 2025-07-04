@@ -7,7 +7,7 @@ import {
     BadRequestException
 } from "@nestjs/common";
 import * as requestIp from '@supercharge/request-ip';
-import {KMSVerifier} from "./service";
+import { KMSVerifier } from "./service";
 
 @Injectable()
 export class KMSGuard implements CanActivate {

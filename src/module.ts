@@ -1,5 +1,5 @@
-import {KMSGuard} from "./guard";
-import {DynamicModule} from "@nestjs/common";
+import { KMSGuard } from "./guard";
+import { DynamicModule } from "@nestjs/common";
 import { KMSVerifier } from "./service";
 
 export interface KMSModuleOption {
