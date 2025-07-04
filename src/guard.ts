@@ -19,6 +19,7 @@ export class KMSGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const ip = requestIp.getClientIp(request);
         if (!ip) throw new ForbiddenException(); // 아이피 없는 경우
+        console.log(ip);
         if (!request.headers.authorization) throw new BadRequestException();
         if (!request.headers.authorization.startsWith('Bearer ')) throw new BadRequestException();
         const token = request.headers.authorization.replace('Bearer ', '');
